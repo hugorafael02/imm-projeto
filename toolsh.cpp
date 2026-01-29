@@ -34,3 +34,4 @@ using namespace std;
 void init_args(int argc, char *argv[], map<string, string> &args);
 string get_or_die(map<string, string> &argv, string key);
 int genrand_int(int n);
+
