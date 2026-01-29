@@ -2,16 +2,16 @@
 #define MODELS_H
 
 #include <vector>
-#include <random> // OBRIGAT”RIO para mt19937
+#include <random> // OBRIGAT√ìRIO para mt19937
 
 using namespace std;
 
 typedef struct {
 	int u, v;
-	double c; // Mantendo 'c' conforme seu cÛdigo anterior
+	double c; // Mantendo 'c' conforme seu c√≥digo anterior
 } edge;
 
-// Apenas os protÛtipos do Monte Carlo (j· que gen_RR est· no imm.cpp)
+// Apenas os prot√≥tipos do Monte Carlo (j√° que gen_RR est√° no imm.cpp)
 int MonteCarlo_IC(int V, vector<vector<edge> >& es, vector<int>& S, std::mt19937& gen);
 int MonteCarlo_LT(int V, vector<vector<edge> >& es, vector<int>& S, std::mt19937& gen);
 
