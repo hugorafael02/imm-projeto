@@ -11,104 +11,72 @@ def generate_deterministic_scale_free(
     alpha=1, 
     beta_param=5
 ):
-    """
-    Gera um grafo Scale-Free de forma determinística e eficiente em memória.
-    Usa o modelo Barabási-Albert (Preferential Attachment).
-    """
-    
-    print(f"--- Configuração ---")
+    print(f"--- Configuração Blindada (Cross-Platform) ---")
     print(f"Nós: {num_nodes:,}")
     print(f"Arestas/Nó (m): {edges_per_node}")
-    print(f"Semente (Seed): {seed}")
-    print(f"Distribuição Beta: alpha={alpha}, beta={beta_param}")
-    print(f"--------------------")
-
-    # 1. TRAVA AS SEMENTES (O Segredo do Determinismo)
-    # Isso garante que a topologia seja idêntica em qualquer máquina
+    print(f"Semente: {seed}")
+    
+    # 1. TRAVA AS SEMENTES
     random.seed(seed)
-    # Isso garante que os pesos sejam idênticos em qualquer máquina
     np.random.seed(seed)
 
     start_time = time.time()
 
-    with open(output_file, 'w') as f:
-        # Opcional: Escrever cabeçalho
-        # f.write(f"{num_nodes} {num_nodes * edges_per_node}\n")
-
-        # Lista que representa a urna de "preferential attachment"
-        # Nós com mais conexões aparecem mais vezes aqui.
-        # Iniciamos com um grafo completo pequeno de m nós
+    # 2. CORREÇÃO CRÍTICA 1: newline='\n'
+    # Isso força o Windows a usar quebra de linha do Linux (LF) em vez de (CRLF)
+    # Garante que os bytes do arquivo sejam idênticos em qualquer OS.
+    with open(output_file, 'w', newline='\n') as f:
+        
+        # Urna de preferential attachment
         targets = list(range(edges_per_node)) * edges_per_node
         
-        # Buffer para escrita rápida
         buffer = []
         BUFFER_SIZE = 50000 
         
-        # Gera arestas iniciais (clique inicial)
+        # Gera arestas iniciais
         for i in range(edges_per_node):
             for j in range(i + 1, edges_per_node):
                 w = np.random.beta(alpha, beta_param)
                 buffer.append(f"{i} {j} {w:.6f}\n")
 
-        # Loop principal: Adiciona nós um a um
-        # Começa do nó 'm' até 'num_nodes'
+        # Loop principal
         for source in range(edges_per_node, num_nodes):
             
-            # Escolhe 'm' vizinhos baseados na probabilidade (grau)
-            # A lista 'targets' contém nós repetidos proporcionalmente ao grau
-            # Como random.seed está travado, essa escolha é determinística
             neighbors = set()
             while len(neighbors) < edges_per_node:
-                # Pegamos um indice aleatorio da lista targets
-                # Usamos random.randint para ser rapido e deterministico
                 idx = random.randint(0, len(targets) - 1)
                 neighbor = targets[idx]
                 neighbors.add(neighbor)
             
-            # Processa as arestas criadas
-            for neighbor in neighbors:
-                # Gera peso determinístico
+            # 3. CORREÇÃO CRÍTICA 2: sorted(neighbors)
+            # Sets não têm ordem garantida. O Windows pode iterar {1,5} como (1,5)
+            # e o Linux como (5,1). Isso muda o hash. O sorted() resolve isso.
+            for neighbor in sorted(neighbors):
                 weight = np.random.beta(alpha, beta_param)
-                
-                # Adiciona ao buffer
                 buffer.append(f"{source} {neighbor} {weight:.6f}\n")
                 
-                # Atualiza a lista de preferential attachment
-                # Adicionamos o novo nó e o vizinho escolhido
                 targets.append(source)
                 targets.append(neighbor)
             
-            # Descarga o buffer periodicamente para não encher a RAM
             if len(buffer) >= BUFFER_SIZE:
                 f.writelines(buffer)
                 buffer = []
                 
-                # Log de progresso
                 if source % 100000 == 0:
                     elapsed = time.time() - start_time
                     perc = (source / num_nodes) * 100
-                    print(f"\rProgresso: {perc:.1f}% | Nós: {source:,} | Tempo: {elapsed:.0f}s", end="")
+                    print(f"\rProgresso: {perc:.1f}% | Nós: {source:,}", end="")
 
-        # Grava o restante
         if buffer:
             f.writelines(buffer)
 
     print(f"\n\nSucesso! Arquivo gerado: {output_file}")
     print(f"Tempo Total: {time.time() - start_time:.2f}s")
-    
-    # Dica de Verificação
-    print("DICA: Para verificar se os arquivos são iguais nas duas máquinas,")
-    print("rode o comando de hash (md5sum no Linux ou CertUtil no Windows).")
 
 # --- EXECUÇÃO ---
-# Gere um grafo pequeno primeiro para validar
-# Depois mude para 10_000_000 (10 Milhões)
 generate_deterministic_scale_free(
-    num_nodes=1_000_000,     # Mude para 10M quando quiser testar a escala
-    edges_per_node=10,       # Gera ~10M arestas (ou 100M se nós=10M)
-    seed=424242,             # MANTENHA IGUAL NAS DUAS MÁQUINAS
-    output_file="grafo_teste_deterministico.txt",
-    alpha=0.6, 
-    beta_param=5
-
+    num_nodes=1_000_000,     
+    edges_per_node=10,       
+    seed=424242,             
+    output_file="grafo_cross_platform.txt"
 )
